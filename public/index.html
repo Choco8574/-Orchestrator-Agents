@@ -28,14 +28,42 @@
         font-size: 0.95rem;
       }
       .agent-toggles { display: grid; gap: 10px; }
-      .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border: 1px solid #334155; border-radius: 12px; background: #1f2937; }
-      .toggle-row label { display: flex; flex-direction: column; gap: 6px; margin: 0; font-size: 0.95rem; color: #e5e7eb; }
+      .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border: 1px solid #334155; border-radius: 12px; background: #1f2937; gap: 10px; }
+      .toggle-row label { display: flex; flex-direction: column; gap: 6px; margin: 0; font-size: 0.95rem; color: #e5e7eb; flex: 1; }
       .toggle-row label small { display: block; color: #9ca3af; font-size: 0.82rem; line-height: 1.4; }
+      .toggle-row input[type="checkbox"] { appearance: none; width: 46px; height: 24px; border-radius: 999px; position: relative; cursor: pointer; transition: all 0.2s ease; border: 1px solid transparent; background: #475569; }
+      .toggle-row input[type="checkbox"]::before { content: ''; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: white; transition: transform 0.2s ease; }
+      .toggle-row input[type="checkbox"]:checked::before { transform: translateX(22px); }
+      .toggle-row.math { border-color: #f59e0b; }
+      .toggle-row.math input[type="checkbox"]:checked { background: #f59e0b; }
+      .toggle-row.scientist { border-color: #10b981; }
+      .toggle-row.scientist input[type="checkbox"]:checked { background: #10b981; }
+      .toggle-row.writer { border-color: #3b82f6; }
+      .toggle-row.writer input[type="checkbox"]:checked { background: #3b82f6; }
+      .toggle-row.comedian { border-color: #ec4899; }
+      .toggle-row.comedian input[type="checkbox"]:checked { background: #ec4899; }
+      .toggle-row.engineer { border-color: #8b5cf6; }
+      .toggle-row.engineer input[type="checkbox"]:checked { background: #8b5cf6; }
+      .toggle-row.coder { border-color: #ef4444; }
+      .toggle-row.coder input[type="checkbox"]:checked { background: #ef4444; }
+      .toggle-row.detective { border-color: #14b8a6; }
+      .toggle-row.detective input[type="checkbox"]:checked { background: #14b8a6; }
+      .toggle-row.zoologist { border-color: #8dd3c7; }
+      .toggle-row.zoologist input[type="checkbox"]:checked { background: #8dd3c7; }
+      .toggle-row.doctor { border-color: #f97316; }
+      .toggle-row.doctor input[type="checkbox"]:checked { background: #f97316; }
+      .toggle-row.paleontologist { border-color: #a855f7; }
+      .toggle-row.paleontologist input[type="checkbox"]:checked { background: #a855f7; }
       .message-meta { font-size: 0.8rem; color: #9ca3af; margin: 6px 0; }
-      .chat-panel { display: flex; flex-direction: column; gap: 14px; }
+      .chat-panel { display: flex; flex-direction: column; gap: 14px; min-height: 0; }
       .header-row { display: flex; flex-direction: column; gap: 6px; }
       .app h1 { margin: 0; }
-      .chat-window { border: 1px solid #374151; border-radius: 12px; padding: 16px; min-height: 320px; background: #1f2937; overflow-y: auto; }
+      .date-pill { display: inline-block; margin-top: 6px; padding: 6px 10px; border-radius: 999px; background: #1f2937; color: #93c5fd; font-size: 0.9rem; width: fit-content; }
+      .chat-window { border: 1px solid #374151; border-radius: 12px; padding: 16px; min-height: 280px; max-height: 360px; background: #1f2937; overflow-y: auto; }
+      .game-panel { border: 1px solid #334155; border-radius: 12px; padding: 16px; min-height: 220px; background: #0f172a; }
+      .game-panel h3 { margin: 0 0 8px; color: #93c5fd; }
+      .game-panel p { margin: 0 0 12px; color: #9ca3af; font-size: 0.95rem; }
+      .game-window { min-height: 180px; border-radius: 12px; padding: 12px; background: #111827; overflow: auto; }
       .message { margin-bottom: 16px; line-height: 1.5; }
       .message.user { text-align: right; }
       .message .role { font-size: 0.85rem; opacity: 0.8; }
@@ -67,13 +95,20 @@
       <main class="chat-panel">
         <div class="header-row">
           <h1>Orchestrator Chatbox</h1>
+          <div class="date-pill">August 6, 2026 · Thursday</div>
           <p class="status">Type a prompt and send it to the orchestrator backend.</p>
         </div>
 
         <div class="chat-window" id="chatWindow"></div>
 
+        <div class="game-panel">
+          <h3>Game Preview</h3>
+          <p>When an agent creates a game, it will render here.</p>
+          <div id="gameWindow" class="game-window"></div>
+        </div>
+
         <div class="controls">
-          <textarea id="messageInput" placeholder="Enter your message..."></textarea>
+          <textarea id="messageInput" placeholder="Type your question here..." autofocus></textarea>
           <button id="sendButton">Send</button>
         </div>
       </main>

@@ -8,6 +8,9 @@ const comedianAgent = require('./agents/comedian-agent');
 const engineerAgent = require('./agents/engineer-agent');
 const coderAgent = require('./agents/coder-agent');
 const detectiveAgent = require('./agents/detective-agent');
+const zoologistAgent = require('./agents/zoologist-agent');
+const doctorAgent = require('./agents/doctor-agent');
+const paleontologistAgent = require('./agents/paleontologist-agent');
 
 const AGENTS = [
   mathAgent,
@@ -17,49 +20,53 @@ const AGENTS = [
   engineerAgent,
   coderAgent,
   detectiveAgent,
+  zoologistAgent,
+  doctorAgent,
+  paleontologistAgent,
 ];
 
-const ROLE_MAPPING = {
-  planner: ['engineer', 'writer', 'scientist'],
-  researcher: ['scientist', 'detective'],
-  writer: ['writer', 'coder'],
-  coder: ['coder', 'engineer'],
-  reviewer: ['writer', 'engineer', 'coder'],
-  tester: ['engineer', 'coder'],
-  translator: ['writer'],
-  communicator: ['writer', 'comedian'],
-};
-
 function chooseAgents(message, allowedAgents) {
-  if (Array.isArray(allowedAgents) && allowedAgents.length > 0) {
-    const allowedSet = new Set(allowedAgents.map((id) => id.toLowerCase()));
-    return AGENTS.filter((agent) => allowedSet.has(agent.id));
-  }
+  const allowedSet = Array.isArray(allowedAgents) && allowedAgents.length > 0
+    ? new Set(allowedAgents.map((id) => id.toLowerCase()))
+    : null;
 
   const normalized = message.toLowerCase();
-  const selectedIds = new Set();
+  const scoredAgents = AGENTS
+    .filter((agent) => !allowedSet || allowedSet.has(agent.id))
+    .map((agent) => ({ agent, score: 0 }));
 
-  const addRoles = (pattern, roleKeys) => {
+  const addScore = (agentId, pattern, score) => {
     if (pattern.test(normalized)) {
-      roleKeys.forEach((id) => selectedIds.add(id));
+      const entry = scoredAgents.find((item) => item.agent.id === agentId);
+      if (entry) {
+        entry.score += score;
+      }
     }
   };
 
-  addRoles(/(plan|roadmap|strategy|steps|organize|outline|structure)/, ROLE_MAPPING.planner);
-  addRoles(/(research|discover|find out|what is|who|where|why|when|information|context)/, ROLE_MAPPING.researcher);
-  addRoles(/(write|draft|compose|blog|email|summary|summarize|explain|document|message|proposal|story|rewrite|rephrase)/, ROLE_MAPPING.writer);
-  addRoles(/(coder|code|script|function|implement|debug|bug|app|api|program|tool|software|library)/, ROLE_MAPPING.coder);
-  addRoles(/(review|check|validate|audit|inspect|quality|edit|proofread|critique|feedback|suggest)/, ROLE_MAPPING.reviewer);
-  addRoles(/(test|tester|unit test|integration|scenario|case|verify|validate|assert|run|bug)/, ROLE_MAPPING.tester);
-  addRoles(/(translate|rewrite|rephrase|simplify|convert|style|tone|language)/, ROLE_MAPPING.translator);
-  addRoles(/(joke|funny|humor|storytelling|creative|playful)/, ROLE_MAPPING.communicator);
+  addScore('math', /(math|calculate|calculate|compute|equation|sum|total|average|percent|ratio|number|plus|minus|times|divide|difference|algebra|geometry|statistics|formula|solve|\b\d+\b)/, 5);
+  addScore('scientist', /(science|scientific|biology|chemistry|physics|astronomy|evolution|experiment|hypothesis|photosynthesis|genetics|ecosystem|atom|molecule|cell|organism|theory)/, 5);
+  addScore('coder', /(code|coding|programming|developer|javascript|python|api|bug|debug|function|implement|class|library|module|syntax|error|script|software|tool|build)/, 5);
+  addScore('engineer', /(engineer|engineering|system|architecture|workflow|infrastructure|design|optimize|scalable|deploy|server|database|network|iot|safety)/, 5);
+  addScore('writer', /(write|draft|compose|email|message|summary|summarize|document|article|story|paragraph|proposal|rewrite|rephrase|letter|script|explain)/, 4);
+  addScore('comedian', /(funny|joke|humor|humorous|witty|playful|pun|comic|hilarious|laugh)/, 4);
+  addScore('detective', /(detective|investigate|clue|mystery|suspect|evidence|infer|hidden|solve|find out|who did|why did|where did|when did)/, 4);
+  addScore('zoologist', /(animal|animals|zoo|wildlife|habitat|ecosystem|species|bird|mammal|reptile|fish|insect|predator|prey|ecology)/, 5);
+  addScore('doctor', /(doctor|health|medical|symptom|symptoms|disease|illness|medicine|hospital|treatment|diagnosis|wellness|patient)/, 5);
+  addScore('paleontologist', /(fossil|fossils|prehistoric|dinosaur|dinosaurs|extinct|ancient life|evolution|paleo|paleontology)/, 5);
 
-  if (selectedIds.size === 0) {
-    AGENTS.forEach((agent) => selectedIds.add(agent.id));
+  const selected = scoredAgents
+    .filter((item) => item.score > 0)
+    .sort((left, right) => right.score - left.score);
+
+  if (selected.length === 0) {
+    const fallbackAgent = AGENTS.find((agent) => agent.id === 'writer') || AGENTS[0];
+    return fallbackAgent ? [fallbackAgent] : [];
   }
 
-  const selected = AGENTS.filter((agent) => selectedIds.has(agent.id));
-  return selected.length ? selected : AGENTS;
+  const strongestScore = selected[0].score;
+  const topMatches = selected.filter((item) => item.score >= strongestScore - 1);
+  return topMatches.map((item) => item.agent);
 }
 
 function buildOrchestratorInstructions(userMessage, agents) {
@@ -67,6 +74,7 @@ function buildOrchestratorInstructions(userMessage, agents) {
   return [
     `User request: "${userMessage.trim()}"`,
     `Selected agents: ${names}.`,
+    'Only use the selected agents listed above; do not invoke other agents unless they are explicitly required.',
     'Coordinate each agent response by leveraging its specialization.',
     'Produce a short combined summary that explains what each agent contributed and why.',
     'If an agent is not relevant, explain why it was skipped.',

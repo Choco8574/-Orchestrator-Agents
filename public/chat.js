@@ -41,6 +41,24 @@ const AGENTS = [
     description:
       'Investigate hidden details, infer context, and uncover relevant facts from the user prompt.',
   },
+  {
+    id: 'zoologist',
+    name: 'Zoologist Agent',
+    description:
+      'Explain animals, habitats, ecosystems, and biological behavior with a naturalist perspective.',
+  },
+  {
+    id: 'doctor',
+    name: 'Doctor Agent',
+    description:
+      'Offer health-related guidance, explain symptoms, and provide general medical information carefully.',
+  },
+  {
+    id: 'paleontologist',
+    name: 'Paleontologist Agent',
+    description:
+      'Discuss fossils, prehistoric life, ancient ecosystems, and evolutionary history.',
+  },
 ];
 
 const chatWindow = document.getElementById('chatWindow');
@@ -48,6 +66,7 @@ const messageInput = document.getElementById('messageInput');
 const sendButton = document.getElementById('sendButton');
 const agentToggles = document.getElementById('agentToggles');
 const workflowTrace = document.getElementById('workflowTrace');
+const gameWindow = document.getElementById('gameWindow');
 const statusText = document.querySelector('.status');
 
 function formatTimestamp() {
@@ -102,7 +121,7 @@ function renderAgentToggles() {
   agentToggles.innerHTML = '';
   AGENTS.forEach((agent) => {
     const row = document.createElement('div');
-    row.className = 'toggle-row';
+    row.className = `toggle-row ${agent.id}`;
 
     const label = document.createElement('label');
     label.htmlFor = `agent-${agent.id}`;
@@ -135,6 +154,77 @@ function getEnabledAgentNames() {
   return getEnabledAgents().map((agent) => agent.name);
 }
 
+function selectRelevantAgents(message, enabledAgents) {
+  const normalized = message.toLowerCase();
+  const rules = {
+    math: /\b(add|subtract|multiply|divide|sum|difference|equation|calculate|math|algebra|geometry|number|percent|ratio|slope|integral|derivative)\b/,
+    scientist: /\b(science|scientist|biology|chemistry|physics|astronomy|evolution|cell|atom|experiment|hypothesis|research)\b/,
+    writer: /\b(write|story|essay|email|letter|poem|summary|paragraph|article|blog|speech|description|narrative)\b/,
+    comedian: /\b(joke|funny|comedy|humor|pun|laugh|entertain|meme)\b/,
+    engineer: /\b(engineer|engineering|build|design|system|machine|structure|bridge|robot|circuit|prototype|plan)\b/,
+    coder: /\b(code|program|javascript|python|bug|debug|function|api|app|software|developer|syntax|loop|class)\b/,
+    detective: /\b(detective|mystery|clue|case|investigate|suspect|solve|hidden|evidence|who did it)\b/,
+    zoologist: /\b(animal|animals|zoo|wildlife|habitat|ecosystem|species|bird|mammal|reptile|fish|insect|predator|prey|ecology)\b/,
+    doctor: /\b(doctor|health|medical|symptom|symptoms|disease|illness|medicine|hospital|treatment|diagnosis|wellness)\b/,
+    paleontologist: /\b(fossil|fossils|prehistoric|dinosaur|dinosaurs|extinct|ancient life|evolution|paleo|paleontology)\b/,
+  };
+
+  const matched = enabledAgents.filter((agent) => rules[agent.id] && rules[agent.id].test(normalized));
+  if (matched.length > 0) {
+    return matched;
+  }
+
+  return enabledAgents.length > 0 ? [enabledAgents[0]] : [];
+}
+
+function clearGameContent() {
+  if (!gameWindow) return;
+  gameWindow.innerHTML = '<div style="padding: 20px; color: #94a3b8;">Ask an agent to create a game and it will appear here.</div>';
+}
+
+function renderGameContent(html) {
+  if (!gameWindow) return;
+
+  gameWindow.innerHTML = '';
+  const wrapper = document.createElement('div');
+  wrapper.innerHTML = html;
+  gameWindow.appendChild(wrapper);
+
+  const scripts = wrapper.querySelectorAll('script');
+  scripts.forEach((oldScript) => {
+    const newScript = document.createElement('script');
+    if (oldScript.src) {
+      newScript.src = oldScript.src;
+    } else {
+      newScript.textContent = oldScript.textContent;
+    }
+    oldScript.replaceWith(newScript);
+  });
+}
+
+function parseGameMarker(text) {
+  if (!text) return null;
+
+  // First try the custom <<GAME>> markers.
+  const customMatch = text.match(/<<GAME>>(.*?)<<\/GAME>>/s);
+  if (customMatch) {
+    return customMatch[1].trim();
+  }
+
+  // Then try fenced code blocks that contain HTML/JS.
+  const fencedMatch = text.match(/```(?:html|javascript|js)?\s*([\s\S]*?)```/i);
+  if (fencedMatch) {
+    return fencedMatch[1].trim();
+  }
+
+  // Finally, if the reply already looks like game markup, use it directly.
+  if (/<(div|script|style|button|input|canvas|h1|h2|p|span)[^>]*>/i.test(text)) {
+    return text.trim();
+  }
+
+  return null;
+}
+
 function updateStatus() {
   const enabledNames = getEnabledAgentNames();
 
@@ -151,7 +241,7 @@ async function fetchChatResponse(message, agentIds) {
     messages: [
       {
         role: 'user',
-        content: `User request:\n${message}\n\nSelected agents:\n${agentIds.join(', ')}\n\nPlease answer using the chosen agent expertise.`,
+        content: `User request:\n${message}\n\nSelected agents:\n${agentIds.join(', ')}\n\nIf the user asks for a game, return only the HTML/CSS/JS needed to render the game inside a <<GAME>>...<</GAME>> block. Make sure the game is playable in a browser and self-contained. Otherwise answer normally using the chosen agent expertise.`,
       },
     ],
   };
@@ -194,16 +284,32 @@ async function sendMessage() {
     return;
   }
 
+  const relevantAgents = selectRelevantAgents(message, enabledAgents);
+
   appendMessage('user', message);
   appendTrace('User prompt', message);
-  appendTrace('Selected agents', getEnabledAgentNames().join(', '));
+  appendTrace('Selected agents', relevantAgents.map((agent) => agent.name).join(', '));
 
+  clearGameContent();
   messageInput.value = '';
   appendMessage('assistant', 'Orchestrator is preparing the request and aligning agent expertise...', 'Orchestrator');
 
   try {
-    const reply = await fetchChatResponse(message, getEnabledAgentIds());
-    appendMessage('assistant', `Orchestrator reply:\n\n${reply}`, 'Classroom AI');
+    const reply = await fetchChatResponse(message, relevantAgents.map((agent) => agent.id));
+    const gameHtml = parseGameMarker(reply);
+
+    if (gameHtml) {
+      renderGameContent(gameHtml);
+      appendMessage('assistant', '✨ A game has been created and rendered in the right panel!', 'Classroom AI');
+      const remainingText = reply.replace(/<<GAME>>[\s\S]*?<<\/GAME>>/g, '').trim();
+      if (remainingText) {
+        appendMessage('assistant', `Game notes:\n\n${remainingText}`, 'Classroom AI');
+      }
+    } else {
+      clearGameContent();
+      appendMessage('assistant', `Orchestrator reply:\n\n${reply}`, 'Classroom AI');
+    }
+
     appendTrace('Final assistant reply', reply);
   } catch (error) {
     appendMessage('assistant', `⚠️ Failed to get a response: ${error.message}`, 'Orchestrator');
