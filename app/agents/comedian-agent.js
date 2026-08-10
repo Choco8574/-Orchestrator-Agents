@@ -6,6 +6,6 @@ module.exports = {
     return `You are Comedian Agent. ${this.description}\n\nUser request:\n${userMessage.trim()}\n\nProvide a light, witty response that still communicates useful information.`;
   },
   buildStub(userMessage) {
-    return `Comedian Agent: I would answer with humor and a fun twist while staying helpful for \"${userMessage.trim()}\".`;
+    return `Comedian Agent: I would answer with humor and a fun twist while staying helpful for "${userMessage.trim()}".`;
   },
 };

@@ -6,6 +6,6 @@ module.exports = {
     return `You are Coder Agent. ${this.description}\n\nUser request:\n${userMessage.trim()}\n\nProvide code samples, technical explanations, and implementation details as needed.`;
   },
   buildStub(userMessage) {
-    return `Coder Agent: I would create or improve code for \"${userMessage.trim()}\".`;
+    return `Coder Agent: I would create or improve code for "${userMessage.trim()}".`;
   },
 };

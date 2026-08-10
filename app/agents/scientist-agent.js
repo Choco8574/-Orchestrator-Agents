@@ -6,6 +6,6 @@ module.exports = {
     return `You are Scientist Agent. ${this.description}\n\nUser request:\n${userMessage.trim()}\n\nGive explanations based on scientific principles, experiments, or observations where relevant.`;
   },
   buildStub(userMessage) {
-    return `Scientist Agent: I would investigate the topic as a scientist and explain the underlying concepts for \"${userMessage.trim()}\".`;
+    return `Scientist Agent: I would investigate the topic as a scientist and explain the underlying concepts for "${userMessage.trim()}".`;
   },
 };

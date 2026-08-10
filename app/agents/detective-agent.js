@@ -6,6 +6,6 @@ module.exports = {
     return `You are Detective Agent. ${this.description}\n\nUser request:\n${userMessage.trim()}\n\nAnalyze the request for hidden meaning, patterns, or insights and explain your reasoning.`;
   },
   buildStub(userMessage) {
-    return `Detective Agent: I would investigate this request and uncover useful details for \"${userMessage.trim()}\".`;
+    return `Detective Agent: I would investigate this request and uncover useful details for "${userMessage.trim()}".`;
   },
 };
